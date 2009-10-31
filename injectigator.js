@@ -23,7 +23,7 @@ Injectigator.isNode = function(node) {
 
 
 /**
- * Records the start time and links the prev/next and first/last node and 
+ * Records the start time and links the prev/next and first/last node and
  * child of the node and the parent node, respectively.
  * @param {Function} node An InjectigatorNode (function).
  * @returns {Object} The Injectigator class.
@@ -31,18 +31,18 @@ Injectigator.isNode = function(node) {
 Injectigator.enter = function(node) {
   node.$start = new Date;
   node.$end = null;
-  
+
   node.$called++;
-  
+
   // If the previous node/function hadn't finished executing, then this new
   // node is a sub-node/fn of the previous. NOTE(ibolmo): for the async. case
   // the nodes are treated differently.
-  var parent = (!prevNode.$end) ? prevNode : prevNode.parent;  
+  var parent = (!prevNode.$end) ? prevNode : prevNode.parent;
   if (!parent.$first) {
-    parent.$first = node; 
+    parent.$first = node;
   }
   parent.$last = node;
-  
+
   node.$prev = prevNode;
   prevNode = prevNode.$next = node;
   return this;
@@ -93,7 +93,7 @@ prevNode.parent = prevNode;
 var oI = this.setInterval;
 this.setInterval = function(fn, interval){
   if (Injectigator.isNode(fn)) {
-    fn.$periodical = true; 
+    fn.$periodical = true;
   }
   return oI(fn, interval);
 };
