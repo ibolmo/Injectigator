@@ -84,10 +84,19 @@ Injectigator.fn = function(fn) {
   return node;
 };
 
+var prevNode;
 
-// Initialize prevNode the "root" node.
-var prevNode = Injectigator.ROOT = Injectigator.fn();
-prevNode.parent = prevNode;
+/**
+ * Initializes the ROOT and resets the previous known Node to the ROOT.
+ */
+Injectigator.initialize = function() {
+  // TODO(ibolmo): Ensure previous ROOT is properly garbage collected.
+  prevNode = this.ROOT = this.fn();
+  prevNode.parent = prevNode;
+};
+
+Injectigator.initialize();
+
 
 // Override setInterval or setTimeout. Helpful for the visualization stage.
 var oI = this.setInterval;
