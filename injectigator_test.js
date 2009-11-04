@@ -50,6 +50,15 @@ TestCase('Injectigator', {
     assertEquals('For the simplest case, the node\'s parent is the root node.',
                  node.$parent,
                  Injectigator.ROOT);
+    assertEquals('Previous node should be the ROOT for the first node',
+                  Injectigator.ROOT,
+                  node.$prev);
+    assertEquals('First child of the parent (ROOT) is the node',
+                  node,
+                  Injectigator.ROOT.$first);
+    assertEquals('Last child of the parent (ROOT) is the node',
+                  node,
+                  Injectigator.ROOT.$last);
 
     // TODO(ibolmo): Consider calling enter on the same node twice.
   },
@@ -130,6 +139,20 @@ TestCase('Injectigator', {
     assertEquals('current parent should be ROOT',
                  Injectigator.ROOT,
                  insideNode.$parent);
+
+    assertEquals(insideNode, rootNode.$next);
+    assertEquals(rootNode, insideNode.$prev);
+
+    assertEquals('parent first child is rootNode',
+                 rootNode,
+                 Injectigator.ROOT.$first);
+    assertEquals('parent last child is insideNode',
+                 insideNode,
+                 Injectigator.ROOT.$last);
+  },
+
+  testFnAndOneEmbeddedCall: function() {
+
   }
 
 });
