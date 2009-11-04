@@ -122,7 +122,7 @@ TestCase('Injectigator', {
                  rootNode,
                  Injectigator.getPreviousNode());
     insideNode();
-
+    assertEquals(called, 1);
     assertEquals('should be at insideNode',
                  insideNode,
                  Injectigator.getPreviousNode());
