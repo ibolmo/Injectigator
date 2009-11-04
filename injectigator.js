@@ -11,6 +11,26 @@
  */
 var Injectigator = this.Injectigator = {};
 
+// Local (private) variable.
+var prevNode;
+
+/**
+ * Initializes the ROOT and resets the previous known Node to the ROOT.
+ */
+Injectigator.initialize = function() {
+  // TODO(ibolmo): Ensure previous ROOT is properly garbage collected.
+  prevNode = this.ROOT = this.fn();
+  prevNode.$parent = prevNode;
+};
+
+
+/**
+ * @returns {Function} The previous Injectigator node.
+ */
+Injectigator.getPreviousNode = function() {
+  return prevNode;
+};
+
 
 /**
  * Whether the passed in function is an InjectigatorNode.
@@ -42,6 +62,7 @@ Injectigator.enter = function(node) {
     parent.$first = node;
   }
   parent.$last = node;
+  node.$parent = parent;
 
   node.$prev = prevNode;
   prevNode = prevNode.$next = node;
@@ -58,7 +79,7 @@ Injectigator.enter = function(node) {
  */
 Injectigator.exit = function(node, result) {
   node.$end = new Date;
-  node.$elapsed[node.$called] = node.$end - node.$start;
+  node.$elapsed[node.$called - 1] = node.$end - node.$start;
 
   if (prevNode.parent == node) {
     prevNode = node;
@@ -84,17 +105,8 @@ Injectigator.fn = function(fn) {
   return node;
 };
 
-var prevNode;
 
-/**
- * Initializes the ROOT and resets the previous known Node to the ROOT.
- */
-Injectigator.initialize = function() {
-  // TODO(ibolmo): Ensure previous ROOT is properly garbage collected.
-  prevNode = this.ROOT = this.fn();
-  prevNode.parent = prevNode;
-};
-
+// Initialization
 Injectigator.initialize();
 
 

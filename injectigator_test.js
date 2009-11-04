@@ -21,7 +21,13 @@ TestCase('Injectigator', {
     assertFalse(Injectigator.isNode(fn));
   },
 
-  testInjectigatorEnter: function() {
+  testGetPreviousNode: function() {
+    assertEquals('At time 0, the previous node is the ROOT node.',
+                 Injectigator.ROOT,
+                 Injectigator.getPreviousNode());
+  },
+
+  testEnter: function() {
     var called = 0;
     var fn = Injectigator.fn(function(){
       called++;
@@ -29,20 +35,31 @@ TestCase('Injectigator', {
 
     Injectigator.enter(fn);
 
-    assertEquals(called, 0);
+    assertEquals('The scoped called variable should still be 0.', called, 0);
 
+    // TODO(ibolmo): May be inappropriate to access these internal variables
+    // directly during testing. Use public interface once available.
     assertEquals(fn.$called, 1);
     assertNotNull(fn.$start);
     assertNull(fn.$end);
-
     assertEquals(fn.$parent, Injectigator.ROOT);
   },
 
-  testInjectigatorExit: function() {
+  testExit: function() {
+    var called = 0;
+    var fn = Injectigator.fn(function() {
+      called++;
+    });
 
+    var result = Injectigator.enter(fn).exit(fn, 'result');
+
+    assertEquals('result', result);
+    // TODO(ibolmo): Same as above. Use public interface once available.
+    assertNotNull(fn.$end);
+    assertNotNull(fn.$elapsed[0]);
   },
 
-  testInjectigatorFn: function() {
+  testFn: function() {
 
   }
 
