@@ -14,11 +14,16 @@ TestCase('Injectigator', {
   },
 
   testIsNode: function() {
-    var fn = Injectigator.fn();
-    assertTrue(Injectigator.isNode(fn));
-
-    fn = function(){};
-    assertFalse(Injectigator.isNode(fn));
+    var node = function(){};
+    assertFalse('A normal function is not an Injectigator node.',
+                Injectigator.isNode(node));
+                
+    node = Injectigator.fn();
+    assertTrue('A method from Injectigator.node is an Injectigator node',
+               Injectigator.isNode(node));
+               
+    node = Injectigator.fn(function(){});
+    assertTrue(Injectigator.isNode(node));
   },
 
   testGetPreviousNode: function() {
@@ -29,39 +34,49 @@ TestCase('Injectigator', {
 
   testEnter: function() {
     var called = 0;
-    var fn = Injectigator.fn(function(){
+    var node = Injectigator.fn(function(){
       called++;
     });
 
-    Injectigator.enter(fn);
+    Injectigator.enter(node);
 
     assertEquals('The scoped called variable should still be 0.', called, 0);
 
     // TODO(ibolmo): May be inappropriate to access these internal variables
     // directly during testing. Use public interface once available.
-    assertEquals(fn.$called, 1);
-    assertNotNull(fn.$start);
-    assertNull(fn.$end);
-    assertEquals(fn.$parent, Injectigator.ROOT);
+    assertEquals('The node has been called once', node.$called, 1);
+    assertNotNull('The node should have a start time', node.$start);
+    assertNull('The node should not have an end time', node.$end);
+    assertEquals('For the simplest case, the node\'s parent is the root node.',
+                 node.$parent,
+                 Injectigator.ROOT);
+    
+    // TODO(ibolmo): Consider calling enter on the same node twice.
   },
 
   testExit: function() {
     var called = 0;
-    var fn = Injectigator.fn(function() {
+    var node = Injectigator.fn(function() {
       called++;
     });
 
-    var result = Injectigator.enter(fn).exit(fn, 'result');
+    var result = Injectigator.enter(node).exit(node, 'result');
 
-    assertEquals('result', result);
+    assertEquals('Exit should return the passed result.', 'result', result);
     // TODO(ibolmo): Same as above. Use public interface once available.
-    assertNotNull(fn.$end);
-    assertNotNull(fn.$elapsed[0]);
+    assertNotNull('The node should have an end time.', node.$end);
+    assertNotNull('The node should have recorded an elapsed time.',
+                  node.$elapsed[0]);
+    assertEquals(
+        'For the simplest case, the exit should not modify the previous node.',
+        node,
+        Injectigator.getPreviousNode());
+        
+    // TODO(ibolmo): Consider calling exit on the same node twice.
   },
 
   testFn: function() {
-
+    
   }
-
 
 });
