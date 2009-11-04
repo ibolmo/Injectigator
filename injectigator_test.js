@@ -124,35 +124,93 @@ TestCase('Injectigator', {
       });
     });
 
-    var insideNode = rootNode();
+    var innerNode = rootNode();
 
     assertEquals('called should still be 0', 0, called);
     assertEquals('should be at rootNode',
                  rootNode,
                  Injectigator.getPreviousNode());
-    insideNode();
+    innerNode();
     assertEquals(called, 1);
-    assertEquals('should be at insideNode',
-                 insideNode,
+    assertEquals('should be at innerNode',
+                 innerNode,
                  Injectigator.getPreviousNode());
 
     assertEquals('current parent should be ROOT',
                  Injectigator.ROOT,
-                 insideNode.$parent);
+                 innerNode.$parent);
 
-    assertEquals(insideNode, rootNode.$next);
-    assertEquals(rootNode, insideNode.$prev);
+    assertEquals(innerNode, rootNode.$next);
+    assertEquals(rootNode, innerNode.$prev);
 
     assertEquals('parent first child is rootNode',
                  rootNode,
                  Injectigator.ROOT.$first);
-    assertEquals('parent last child is insideNode',
-                 insideNode,
+    assertEquals('parent last child is innerNode',
+                 innerNode,
                  Injectigator.ROOT.$last);
   },
 
   testFnAndOneEmbeddedCall: function() {
+    var rootNode, childNode;
+    var rootNode = Injectigator.fn(function(){
+      childNode = Injectigator.fn(function(){});
+      childNode();
+      return Injectigator.fn(function(){});
+    });
+    var innerNode = rootNode();
 
+    assertEquals('should be at rootNode since child exited',
+                 rootNode,
+                 Injectigator.getPreviousNode());
+
+    assertEquals(rootNode, Injectigator.ROOT.$first);
+    assertEquals('Child should not be the last node for the ROOT',
+                 rootNode,
+                 Injectigator.ROOT.$last);
+
+    assertEquals('rootNode should have a child',
+               childNode,
+               rootNode.$first);
+    assertEquals(childNode, rootNode.$last);
+
+    assertEquals('childNode has rootNode as parent',
+                 rootNode,
+                 childNode.$parent);
+
+    innerNode();
+    assertEquals('should be at innerNode',
+                 innerNode,
+                 Injectigator.getPreviousNode());
+
+    assertEquals('current parent should be ROOT',
+                 Injectigator.ROOT,
+                 innerNode.$parent);
+
+    // Check that links are correct.
+    assertEquals(innerNode, rootNode.$next);
+    assertEquals(rootNode, innerNode.$prev);
+
+    assertEquals('parent first child is rootNode',
+                 rootNode,
+                 Injectigator.ROOT.$first);
+    assertEquals('parent last child is innerNode',
+                 innerNode,
+                 Injectigator.ROOT.$last);
+
+    // Ensure that nothing has happened to the child.
+    assertEquals('Child should not be the last node for the ROOT',
+                 innerNode,
+                 Injectigator.ROOT.$last);
+
+    assertEquals('rootNode should have a child',
+               childNode,
+               rootNode.$first);
+    assertEquals(childNode, rootNode.$last);
+
+    assertEquals('childNode has rootNode as parent',
+                 rootNode,
+                 childNode.$parent);
   }
 
 });
