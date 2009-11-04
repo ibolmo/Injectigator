@@ -17,11 +17,11 @@ TestCase('Injectigator', {
     var node = function(){};
     assertFalse('A normal function is not an Injectigator node.',
                 Injectigator.isNode(node));
-                
+
     node = Injectigator.fn();
     assertTrue('A method from Injectigator.node is an Injectigator node',
                Injectigator.isNode(node));
-               
+
     node = Injectigator.fn(function(){});
     assertTrue(Injectigator.isNode(node));
   },
@@ -50,7 +50,7 @@ TestCase('Injectigator', {
     assertEquals('For the simplest case, the node\'s parent is the root node.',
                  node.$parent,
                  Injectigator.ROOT);
-    
+
     // TODO(ibolmo): Consider calling enter on the same node twice.
   },
 
@@ -71,7 +71,7 @@ TestCase('Injectigator', {
         'For the simplest case, the exit should not modify the previous node.',
         node,
         Injectigator.getPreviousNode());
-        
+
     // TODO(ibolmo): Consider calling exit on the same node twice.
   },
 
@@ -80,31 +80,56 @@ TestCase('Injectigator', {
     var node = Injectigator.fn(function() {
       called++;
     });
-    
+
     node();
     assertEquals('called should be 1', 1, called);
     node();
     assertEquals('ensure fn is not broken after the first use', 2, called);
-    
+
     var AClass = function(){};
     AClass.prototype.called = 0;
     AClass.prototype.incr = Injectigator.fn(function(){
       this.called++;
     });
-    
+
     var A = new AClass();
     A.incr();
-    
+
     assertEquals('Instance called should be 1', 1, A.called);
-    
+
     AClass.prototype.set = Injectigator.fn(function(){
       this.args = Array.prototype.slice.call(arguments);
     });
-    
+
     var B = new AClass();
     var args = ['0', 1, null];
     B.set.apply(B, args);
     assertEquals('Arguments should pass correctly.', B.args, args);
+  },
+
+  testFnAndReturnedEmbeddedNode: function() {
+    var called = 0;
+    var rootNode = Injectigator.fn(function() {
+      return Injectigator.fn(function() {
+        called++;
+      });
+    });
+
+    var insideNode = rootNode();
+
+    assertEquals('called should still be 0', 0, called);
+    assertEquals('should be at rootNode',
+                 rootNode,
+                 Injectigator.getPreviousNode());
+    insideNode();
+
+    assertEquals('should be at insideNode',
+                 insideNode,
+                 Injectigator.getPreviousNode());
+
+    assertEquals('current parent should be ROOT',
+                 Injectigator.ROOT,
+                 insideNode.$parent);
   }
 
 });
