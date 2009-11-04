@@ -76,7 +76,35 @@ TestCase('Injectigator', {
   },
 
   testFn: function() {
+    var called = 0;
+    var node = Injectigator.fn(function() {
+      called++;
+    });
     
+    node();
+    assertEquals('called should be 1', 1, called);
+    node();
+    assertEquals('ensure fn is not broken after the first use', 2, called);
+    
+    var AClass = function(){};
+    AClass.prototype.called = 0;
+    AClass.prototype.incr = Injectigator.fn(function(){
+      this.called++;
+    });
+    
+    var A = new AClass();
+    A.incr();
+    
+    assertEquals('Instance called should be 1', 1, A.called);
+    
+    AClass.prototype.set = Injectigator.fn(function(){
+      this.args = Array.prototype.slice.call(arguments);
+    });
+    
+    var B = new AClass();
+    var args = ['0', 1, null];
+    B.set.apply(B, args);
+    assertEquals('Arguments should pass correctly.', B.args, args);
   }
 
 });

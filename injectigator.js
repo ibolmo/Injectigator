@@ -57,7 +57,7 @@ Injectigator.enter = function(node) {
   // If the previous node/function hadn't finished executing, then this new
   // node is a sub-node/fn of the previous. NOTE(ibolmo): for the async. case
   // the nodes are treated differently.
-  var parent = (!prevNode.$end) ? prevNode : prevNode.parent;
+  var parent = (!prevNode.$end) ? prevNode : prevNode.$parent;
   if (!parent.$first) {
     parent.$first = node;
   }
@@ -81,7 +81,7 @@ Injectigator.exit = function(node, result) {
   node.$end = new Date;
   node.$elapsed[node.$called - 1] = node.$end - node.$start;
 
-  if (prevNode.parent == node) {
+  if (prevNode.$parent == node) {
     prevNode = node;
   }
   return result;
