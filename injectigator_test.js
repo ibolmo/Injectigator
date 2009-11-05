@@ -160,7 +160,7 @@ TestCase('Injectigator', {
   },
 
   testFnAndOneEmbeddedCall: function() {
-    var rootNode, childNode;
+    var childNode;
     var rootNode = Injectigator.fn(function(){
       childNode = Injectigator.fn(function(){});
       childNode();
@@ -235,13 +235,27 @@ TestCase('Injectigator', {
     // TODO(ibolmo): Use a public method when available.
     assertTrue('Node should be marked as delayed', node.$delayed);
 
-    // The node should not be part of the normal execution path.
+    // The node should not have a parent or be considered a child of the root.
+    assertFalse(!!node.$parent);
     assertFalse(!!Injectigator.ROOT.$first);
     assertFalse(!!Injectigator.ROOT.$last);
 
-    // The node should be part of the async root (AROOT) path.
-    assertEquals(node, Injectigator.AROOT.$first);
-    assertEquals(node, Injectigator.AROOT.$last);
+    assertEquals('Since the node executed, the next node is the delayed fn',
+                 Injectigator.ROOT.$next);
+  },
+
+  testSetTimeoutFnWithChild: function() {
+    var called = 0;
+    var childNode;
+    var rootNode = Injectigator.fn(function() {
+      childChild = Injectigator.fn(function(){
+        called++;
+      });
+      childChild();
+    });
+
+    setTimeout(rootNode, 1000);
+    Clock.tick(1000);
   }
 
 });

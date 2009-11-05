@@ -12,7 +12,7 @@
 var Injectigator = this.Injectigator = {};
 
 // Local (private) variable.
-var prevNode, prevANode;
+var prevNode;
 
 /**
  * Initializes the ROOT and resets the previous known Node to the ROOT.
@@ -21,10 +21,6 @@ Injectigator.initialize = function() {
   // TODO(ibolmo): Ensure previous ROOT is properly garbage collected.
   prevNode = this.ROOT = this.fn();
   prevNode.$parent = prevNode;
-
-  // TODO(ibolmo): Ensure previous AROOT is properly garbage collected.
-  prevANode = this.AROOT = this.fn();
-  prevANode.$parent = prevNode;
 };
 
 
@@ -33,14 +29,6 @@ Injectigator.initialize = function() {
  */
 Injectigator.getPreviousNode = function() {
   return prevNode;
-};
-
-
-/**
- * @returns {Function} The previous async. Injectigator node.
- */
-Injectigator.getPreviousAsyncNode = function() {
-  return prevANode;
 };
 
 
@@ -61,29 +49,27 @@ Injectigator.isNode = function(node) {
  * @returns {Object} The Injectigator class.
  */
 Injectigator.enter = function(node) {
-  node.$start = new Date;
+  node.$start = now();
   node.$end = null;
-
   node.$called++;
 
-  var prev = (node.$periodical || node.$delayed) ? prevANode : prevNode;
-
-  // If the previous node/function hadn't finished executing, then this new
-  // node is a sub-node/fn of the previous. NOTE(ibolmo): for the async. case
-  // the nodes are treated differently.
-  var parent = (!prev.$end) ? prev : prev.$parent;
-  if (!parent.$first) {
-    parent.$first = node;
+  if (prevNode.$end) {
+    prevNode.$next = node;
+    node.$prev = prevNode;
   }
-  parent.$last = node;
-  node.$parent = parent;
 
-  node.$prev = prev;
-  if (node.$periodical || node.$delayed) {
-    prevANode = prev.$next = node;
-  } else {
-    prevNode = prev.$next = node;
+  // If the node is delayed or a periodical, then it doesn't have a parent.
+  if (!node.$delayed && !node.$periodical) {
+    if (prevNode.$end) {
+      node.$parent = prevNode.$parent;
+    } else {
+      node.$parent = prevNode;
+      node.$parent.$first = node;
+    }
+    node.$parent.$last = node;
   }
+
+  prevNode = node;
 
   return this;
 };
@@ -97,18 +83,10 @@ Injectigator.enter = function(node) {
  * @returns {*} The result of the original function.
  */
 Injectigator.exit = function(node, result) {
-  node.$end = new Date;
+  node.$end = now();
   node.$elapsed[node.$called - 1] = node.$end - node.$start;
 
-  var prev = (node.$periodical || node.$delayed) ? prevANode : prevNode;
-
-  if (prev.$parent == node) {
-    if (node.$periodical || node.$delayed) {
-      prevANode = node;
-    } else {
-      prevNode = node;
-    }
-  }
+  prevNode = node;
   return result;
 };
 
@@ -149,6 +127,11 @@ this.setTimeout = function(fn, timeout) {
     fn.$delayed = true;
   }
   return oT(fn, timeout);
+};
+
+// Utility
+var now = Date.now || function(){
+	return +new Date;
 };
 
 })();
