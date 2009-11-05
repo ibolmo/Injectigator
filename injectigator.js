@@ -12,7 +12,7 @@
 var Injectigator = this.Injectigator = {};
 
 // Local (private) variable.
-var prevNode;
+var prevNode, prevANode;
 
 /**
  * Initializes the ROOT and resets the previous known Node to the ROOT.
@@ -21,6 +21,10 @@ Injectigator.initialize = function() {
   // TODO(ibolmo): Ensure previous ROOT is properly garbage collected.
   prevNode = this.ROOT = this.fn();
   prevNode.$parent = prevNode;
+
+  // TODO(ibolmo): Ensure previous AROOT is properly garbage collected.
+  prevANode = this.AROOT = this.fn();
+  prevANode.$parent = prevNode;
 };
 
 
@@ -29,6 +33,14 @@ Injectigator.initialize = function() {
  */
 Injectigator.getPreviousNode = function() {
   return prevNode;
+};
+
+
+/**
+ * @returns {Function} The previous async. Injectigator node.
+ */
+Injectigator.getPreviousAsyncNode = function() {
+  return prevANode;
 };
 
 
@@ -54,18 +66,25 @@ Injectigator.enter = function(node) {
 
   node.$called++;
 
+  var prev = (node.$periodical || node.$delayed) ? prevANode : prevNode;
+
   // If the previous node/function hadn't finished executing, then this new
   // node is a sub-node/fn of the previous. NOTE(ibolmo): for the async. case
   // the nodes are treated differently.
-  var parent = (!prevNode.$end) ? prevNode : prevNode.$parent;
+  var parent = (!prev.$end) ? prev : prev.$parent;
   if (!parent.$first) {
     parent.$first = node;
   }
   parent.$last = node;
   node.$parent = parent;
 
-  node.$prev = prevNode;
-  prevNode = prevNode.$next = node;
+  node.$prev = prev;
+  if (node.$periodical || node.$delayed) {
+    prevANode = prev.$next = node;
+  } else {
+    prevNode = prev.$next = node;
+  }
+
   return this;
 };
 
@@ -81,8 +100,14 @@ Injectigator.exit = function(node, result) {
   node.$end = new Date;
   node.$elapsed[node.$called - 1] = node.$end - node.$start;
 
-  if (prevNode.$parent == node) {
-    prevNode = node;
+  var prev = (node.$periodical || node.$delayed) ? prevANode : prevNode;
+
+  if (prev.$parent == node) {
+    if (node.$periodical || node.$delayed) {
+      prevANode = node;
+    } else {
+      prevNode = node;
+    }
   }
   return result;
 };
@@ -108,7 +133,6 @@ Injectigator.fn = function(fn) {
 
 // Initialization
 Injectigator.initialize();
-
 
 // Override setInterval or setTimeout. Helpful for the visualization stage.
 var oI = this.setInterval;

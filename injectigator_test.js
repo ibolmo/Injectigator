@@ -3,6 +3,9 @@
  * {@ link http://code.google.com/p/js-test-driver/wiki/GettingStarted} on how
  * to get started.
  *
+ * NOTE(ibolmo): You'll need to have ../jsunit/jsUnitMockTimeout.js from
+ * http://bit.ly/jsUnitMockTimeout.
+ *
  * @author ibolmo@gmail.com (Olmo Maldonado)
  */
 
@@ -11,6 +14,11 @@ TestCase('Injectigator', {
 
   setUp: function() {
     Injectigator.initialize();
+  },
+
+  testMockClock: function() {
+    assertTrue('ensure jstd loaded Clock mock first',
+               (setTimeout+'').indexOf('Injectigator') != -1);
   },
 
   testIsNode: function() {
@@ -211,6 +219,29 @@ TestCase('Injectigator', {
     assertEquals('childNode has rootNode as parent',
                  rootNode,
                  childNode.$parent);
+  },
+
+  testSetTimeoutFns: function() {
+    var called = 0;
+    var node = Injectigator.fn(function() {
+      called++;
+    });
+
+    setTimeout(node, 1000);
+    Clock.tick(1000);
+
+    assertEquals('function gets called normally', 1, called);
+
+    // TODO(ibolmo): Use a public method when available.
+    assertTrue('Node should be marked as delayed', node.$delayed);
+
+    // The node should not be part of the normal execution path.
+    assertFalse(!!Injectigator.ROOT.$first);
+    assertFalse(!!Injectigator.ROOT.$last);
+
+    // The node should be part of the async root (AROOT) path.
+    assertEquals(node, Injectigator.AROOT.$first);
+    assertEquals(node, Injectigator.AROOT.$last);
   }
 
 });
