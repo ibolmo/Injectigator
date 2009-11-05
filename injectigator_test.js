@@ -58,9 +58,6 @@ TestCase('Injectigator', {
     assertEquals('For the simplest case, the node\'s parent is the root node.',
                  node.$parent,
                  Injectigator.ROOT);
-    assertEquals('Previous node should be the ROOT for the first node',
-                  Injectigator.ROOT,
-                  node.$prev);
     assertEquals('First child of the parent (ROOT) is the node',
                   node,
                   Injectigator.ROOT.$first);
@@ -240,8 +237,10 @@ TestCase('Injectigator', {
     assertFalse(!!Injectigator.ROOT.$first);
     assertFalse(!!Injectigator.ROOT.$last);
 
-    assertEquals('Since the node executed, the next node is the delayed fn',
-                 Injectigator.ROOT.$next);
+    // TODO(ibolmo): For the edge case that the only function used is delayed,
+    // need a way to access that node.
+    //assertEquals('Since the node executed, the next node is the delayed fn',
+    //             Injectigator.ROOT.$next);
   },
 
   testSetTimeoutFnWithChild: function() {
