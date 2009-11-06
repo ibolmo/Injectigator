@@ -46,24 +46,25 @@ TestCase('Injectigator', {
       called++;
     });
 
-    Injectigator.enter(node);
+    var enode = {start: +new Date, curry: node};
+    Injectigator.enter(enode);
 
     assertEquals('The scoped called variable should still be 0.', called, 0);
 
     // TODO(ibolmo): May be inappropriate to access these internal variables
     // directly during testing. Use public interface once available.
-    assertEquals('The node has been called once', node.$called, 1);
-    assertNotNull('The node should have a start time', node.$start);
-    assertNull('The node should not have an end time', node.$end);
+    assertEquals('The node has been called once', enode.curry.$called, 1);
+    assertNotNull('The node should have a start time', enode.start);
+    assertFalse('The node should not have an end time', !!enode.end);
     assertEquals('For the simplest case, the node\'s parent is the root node.',
-                 node.$parent,
+                 enode.parent,
                  Injectigator.ROOT);
     assertEquals('First child of the parent (ROOT) is the node',
-                  node,
-                  Injectigator.ROOT.$first);
+                  enode,
+                  Injectigator.ROOT.first);
     assertEquals('Last child of the parent (ROOT) is the node',
-                  node,
-                  Injectigator.ROOT.$last);
+                  enode,
+                  Injectigator.ROOT.last);
 
     // TODO(ibolmo): Consider calling enter on the same node twice.
   },
@@ -74,17 +75,14 @@ TestCase('Injectigator', {
       called++;
     });
 
-    var result = Injectigator.enter(node).exit(node, 'result');
+    var enode = {start: +new Date, curry: node};
+    var result = Injectigator.enter(enode).exit(enode, 'result');
 
     assertEquals('Exit should return the passed result.', 'result', result);
     // TODO(ibolmo): Same as above. Use public interface once available.
-    assertNotNull('The node should have an end time.', node.$end);
+    assertNotNull('The node should have an end time.', enode.end);
     assertNotNull('The node should have recorded an elapsed time.',
-                  node.$elapsed[0]);
-    assertEquals(
-        'For the simplest case, the exit should not modify the previous node.',
-        node,
-        Injectigator.getPreviousNode());
+                  enode.elapsed);
 
     // TODO(ibolmo): Consider calling exit on the same node twice.
   },
@@ -134,26 +132,27 @@ TestCase('Injectigator', {
     assertEquals('called should still be 0', 0, called);
     assertEquals('should be at rootNode',
                  rootNode,
-                 Injectigator.getPreviousNode());
+                 Injectigator.getPreviousNode().curry);
     innerNode();
+    var enode = Injectigator.getPreviousNode();
     assertEquals(called, 1);
     assertEquals('should be at innerNode',
                  innerNode,
-                 Injectigator.getPreviousNode());
+                 enode.curry);
 
     assertEquals('current parent should be ROOT',
                  Injectigator.ROOT,
-                 innerNode.$parent);
-
-    assertEquals(innerNode, rootNode.$next);
-    assertEquals(rootNode, innerNode.$prev);
+                 enode.parent);
 
     assertEquals('parent first child is rootNode',
                  rootNode,
-                 Injectigator.ROOT.$first);
+                 Injectigator.ROOT.first.curry);
     assertEquals('parent last child is innerNode',
                  innerNode,
-                 Injectigator.ROOT.$last);
+                 Injectigator.ROOT.last.curry);
+
+    assertEquals(innerNode, Injectigator.ROOT.first.next.curry);
+    assertEquals(rootNode, Injectigator.ROOT.last.previous.curry);
   },
 
   testFnAndOneEmbeddedCall: function() {
@@ -165,57 +164,57 @@ TestCase('Injectigator', {
     });
     var innerNode = rootNode();
 
+    var enode = Injectigator.getPreviousNode();
     assertEquals('should be at rootNode since child exited',
                  rootNode,
-                 Injectigator.getPreviousNode());
+                 enode.curry);
 
-    assertEquals(rootNode, Injectigator.ROOT.$first);
+    assertEquals(rootNode, Injectigator.ROOT.first.curry);
     assertEquals('Child should not be the last node for the ROOT',
                  rootNode,
-                 Injectigator.ROOT.$last);
+                 Injectigator.ROOT.last.curry);
 
-    assertEquals('rootNode should have a child',
-               childNode,
-               rootNode.$first);
-    assertEquals(childNode, rootNode.$last);
+    assertEquals('rootNode should have a child', childNode, enode.first.curry);
+    assertEquals(childNode, enode.last.curry);
 
     assertEquals('childNode has rootNode as parent',
                  rootNode,
-                 childNode.$parent);
+                 enode.first.parent.curry);
 
     innerNode();
+    enode = Injectigator.getPreviousNode();
     assertEquals('should be at innerNode',
                  innerNode,
-                 Injectigator.getPreviousNode());
+                 enode.curry);
 
     assertEquals('current parent should be ROOT',
                  Injectigator.ROOT,
-                 innerNode.$parent);
+                 enode.parent);
 
     // Check that links are correct.
-    assertEquals(innerNode, rootNode.$next);
-    assertEquals(rootNode, innerNode.$prev);
+    assertEquals(innerNode, enode.previous.next.curry);
+    assertEquals(rootNode, enode.previous.curry);
 
     assertEquals('parent first child is rootNode',
                  rootNode,
-                 Injectigator.ROOT.$first);
+                 Injectigator.ROOT.first.curry);
     assertEquals('parent last child is innerNode',
                  innerNode,
-                 Injectigator.ROOT.$last);
+                 Injectigator.ROOT.last.curry);
 
     // Ensure that nothing has happened to the child.
     assertEquals('Child should not be the last node for the ROOT',
                  innerNode,
-                 Injectigator.ROOT.$last);
+                 Injectigator.ROOT.last.curry);
 
     assertEquals('rootNode should have a child',
-               childNode,
-               rootNode.$first);
-    assertEquals(childNode, rootNode.$last);
+                 childNode,
+                 enode.previous.first.curry);
+    assertEquals(childNode, enode.previous.last.curry);
 
     assertEquals('childNode has rootNode as parent',
                  rootNode,
-                 childNode.$parent);
+                 enode.previous.first.parent.curry);
   },
 
   testSetTimeoutFns: function() {
@@ -233,9 +232,10 @@ TestCase('Injectigator', {
     assertTrue('Node should be marked as delayed', node.$delayed);
 
     // The node should not have a parent or be considered a child of the root.
-    assertFalse(!!node.$parent);
-    assertFalse(!!Injectigator.ROOT.$first);
-    assertFalse(!!Injectigator.ROOT.$last);
+    var enode = Injectigator.getPreviousNode();
+    assertFalse(!!enode.parent);
+    assertFalse(!!Injectigator.ROOT.first);
+    assertFalse(!!Injectigator.ROOT.last);
 
     // TODO(ibolmo): For the edge case that the only function used is delayed,
     // need a way to access that node.

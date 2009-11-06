@@ -19,8 +19,7 @@ var prevNode;
  */
 Injectigator.initialize = function() {
   // TODO(ibolmo): Ensure previous ROOT is properly garbage collected.
-  prevNode = this.ROOT = this.fn();
-  prevNode.$parent = prevNode;
+  prevNode = this.ROOT = {};
 };
 
 
@@ -43,55 +42,6 @@ Injectigator.isNode = function(node) {
 
 
 /**
- * Records the start time and links the prev/next and first/last node and
- * child of the node and the parent node, respectively.
- * @param {Function} node An InjectigatorNode (function).
- * @returns {Object} The Injectigator class.
- */
-Injectigator.enter = function(node) {
-  node.$start = now();
-  node.$end = null;
-  node.$called++;
-
-  if (prevNode.$end) {
-    prevNode.$next = node;
-    node.$prev = prevNode;
-  }
-
-  // If the node is delayed or a periodical, then it doesn't have a parent.
-  if (!node.$delayed && !node.$periodical) {
-    if (prevNode.$end) {
-      node.$parent = prevNode.$parent;
-    } else {
-      node.$parent = prevNode;
-      node.$parent.$first = node;
-    }
-    node.$parent.$last = node;
-  }
-
-  prevNode = node;
-
-  return this;
-};
-
-
-/**
- * Records the end, elapsed time, and resets the parent if the sub-nodes
- * finished executing.
- * @param {Function} node An InjectigatorNode.
- * @param {*} result The result of calling the function.
- * @returns {*} The result of the original function.
- */
-Injectigator.exit = function(node, result) {
-  node.$end = now();
-  node.$elapsed[node.$called - 1] = node.$end - node.$start;
-
-  prevNode = node;
-  return result;
-};
-
-
-/**
  * Wraps a normal function with the {@see #enter} and {@see #exit}
  * Injectigator utility functions.
  * @param {Function} fn The original function.
@@ -100,12 +50,58 @@ Injectigator.exit = function(node, result) {
 
 Injectigator.fn = function(fn) {
   var node = function() {
-    return Injectigator.enter(node).exit(node, fn.apply(this, arguments));
+    var enode = {start: now(), curry: node};
+    return Injectigator.enter(enode).exit(enode, fn.apply(this, arguments));
   };
   node.$jsrNode = true;
   node.$called = 0;
-  node.$elapsed = [];
   return node;
+};
+
+
+/**
+ * Records the start time and links the prev/next and first/last node and
+ * child of the node and the parent node, respectively.
+ * @param {Object} enode An execution node.
+ * @returns {Object} The Injectigator class.
+ */
+Injectigator.enter = function(enode) {
+  enode.curry.$called++;
+
+  if (prevNode.end) {
+    prevNode.next = enode;
+    enode.previous = prevNode;
+  }
+
+  // If the node is delayed or a periodical, then it doesn't have a parent.
+  if (!enode.curry.$delayed && !enode.curry.$periodical) {
+    if (prevNode.end) {
+      enode.parent = prevNode.parent;
+    } else {
+      enode.parent = prevNode;
+      enode.parent.first = enode;
+    }
+    enode.parent.last = enode;
+  }
+
+  prevNode = enode;
+  return this;
+};
+
+
+/**
+ * Records the end, elapsed time, and resets the parent if the sub-nodes
+ * finished executing.
+ * @param {Object} enode An execution node.
+ * @param {*} result The result of calling the function.
+ * @returns {*} The result of the original function.
+ */
+Injectigator.exit = function(enode, result) {
+  enode.end = now();
+  enode.elapsed = enode.end - enode.start;
+
+  prevNode = enode;
+  return result;
 };
 
 
