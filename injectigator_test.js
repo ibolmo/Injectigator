@@ -119,6 +119,23 @@ TestCase('Injectigator', {
     assertEquals('Arguments should pass correctly.', B.args, args);
   },
 
+  testFnWithArguments: function() {
+    var called = 0;
+    var fn = function() { called++; };
+
+    var node = Injectigator.fn('node', null, fn);
+    node();
+    assertEquals(1, called);
+    assertEquals('node', node.$name);
+    assertNull(node.$lineNbr);
+
+    node = Injectigator.fn('another', 131, fn);
+    node();
+    assertEquals(2, called);
+    assertEquals('another', node.$name);
+    assertEquals(131, node.$lineNbr);
+  },
+
   testFnAndReturnedEmbeddedNode: function() {
     var called = 0;
     var rootNode = Injectigator.fn(function() {
@@ -247,14 +264,21 @@ TestCase('Injectigator', {
     var called = 0;
     var childNode;
     var rootNode = Injectigator.fn(function() {
-      childChild = Injectigator.fn(function(){
+      childNode = Injectigator.fn(function(){
         called++;
       });
-      childChild();
+      childNode();
     });
 
     setTimeout(rootNode, 1000);
     Clock.tick(1000);
+
+    assertEquals('function gets called normally', 1, called);
+
+    var enode = Injectigator.getPreviousNode();
+    assertEquals(rootNode, enode.curry);
+    assertEquals(childNode, enode.first.curry);
+    assertEquals(childNode, enode.last.curry);
   }
 
 });

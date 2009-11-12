@@ -43,16 +43,29 @@ Injectigator.isNode = function(node) {
 
 /**
  * Wraps a normal function with the {@see #enter} and {@see #exit}
- * Injectigator utility functions.
- * @param {Function} fn The original function.
+ * Injectigator utility functions. This function can take one to three arguments
+ * according to how much information can be provided. See the argument
+ * definitions for guidelines on how to use this function.
+ *
+ * @param {string|Function} opt_fnNameOrFn The name of the function or
+ *     the actual function.
+ * @param {?number} opt_lineNbr The line in this file the function is on.
+ * @param {?Function} opt_fn The original function.
  * @returns {Function} An InjectigatorNode.
  */
 
-Injectigator.fn = function(fn) {
+Injectigator.fn = function(opt_fnNameOrFn, opt_lineNbr, opt_fn) {
+  if (!opt_fn) {
+    opt_fn = opt_fnNameOrFn;
+  }
   var node = function() {
     var enode = {start: now(), curry: node};
-    return Injectigator.enter(enode).exit(enode, fn.apply(this, arguments));
+    return Injectigator.enter(enode).exit(enode, opt_fn.apply(this, arguments));
   };
+  if (arguments.length == 3) {
+    node.$name = opt_fnNameOrFn;
+    node.$lineNbr = opt_lineNbr;
+  }
   node.$jsrNode = true;
   node.$called = 0;
   return node;
