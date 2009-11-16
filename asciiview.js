@@ -42,7 +42,6 @@ var AsciiView = Injectigator.AsciiView = function() {
  */
 AsciiView.SymbolType = {
   START: '\u2510',
-  END: '\u2518',
   NODE: '\u251C',
   DELAYED: '\u255F',
   PERIODICAL: '\u2560'
@@ -58,16 +57,23 @@ AsciiView.prototype.l_ = 0;
 
 
 AsciiView.prototype.parseNode = function(node) {
-  this.buffer_[this.l_] += AsciiView.SymbolType.START;
-  while (node && node.curry) {
-    this.buffer_[++this.l_] = [
-      AsciiView.SymbolType.NODE,
-      (node.curry.$name || 'anon') + ',',
-      node.elapsed, 'ms'
-    ].join(' ');
+  var prefix = this.pad_(this.buffer_[this.l_].length);
+  while (node) {
+    if (node.curry) {
+      this.buffer_[++this.l_] = prefix + [
+        AsciiView.SymbolType.NODE,
+        (node.curry.$name || 'anon') + ',',
+        node.elapsed, 'ms'
+      ].join(' ');
+    }
+    if (node.first) {
+      this.buffer_[this.l_] += prefix +
+                               (node.curry ? ' ' : '') +
+                               AsciiView.SymbolType.START;
+      this.parseNode(node.first);
+    }
     node = node.next;
   }
-  this.buffer_[++this.l_] = AsciiView.SymbolType.END;
 };
 
 
@@ -77,5 +83,11 @@ AsciiView.prototype.toString = function() {
   console.log(str);
   return str;
 };
+
+
+AsciiView.prototype.pad_ = function(len) {
+  return new Array(len).join(' ');
+};
+
 
 })();
