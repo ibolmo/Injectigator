@@ -19,7 +19,6 @@
  *                                                 ├ doSomething, 100 ms
  *                      ╠ log (periodical), 10 ms
  * ├ anon (210), 10 ms
- * ┘
  *
  * @param {Object} opt_root An optional root to use instead the global
  *     Injectigator root.
@@ -56,6 +55,13 @@ AsciiView.SymbolType = {
 AsciiView.prototype.l_ = 0;
 
 
+/**
+ * Recursively parses the node and its children and in the process populates the
+ * the string buffer with the output. The {@see #toString} method returns the
+ * result.
+ *
+ * @param {Object} node The node to parse.
+ */
 AsciiView.prototype.parseNode = function(node) {
   var prefix = this.pad_(this.buffer_[this.l_].length);
   while (node) {
@@ -67,8 +73,7 @@ AsciiView.prototype.parseNode = function(node) {
       ].join(' ');
     }
     if (node.first) {
-      this.buffer_[this.l_] += prefix +
-                               (node.curry ? ' ' : '') +
+      this.buffer_[this.l_] += (node.curry ? ' ' : '') +
                                AsciiView.SymbolType.START;
       this.parseNode(node.first);
     }
@@ -79,12 +84,15 @@ AsciiView.prototype.parseNode = function(node) {
 
 /** @return The ASCII representation of the graph. */
 AsciiView.prototype.toString = function() {
-  var str = this.buffer_.join('\n');
-  console.log(str);
-  return str;
+  return this.buffer_.join('\n');
 };
 
 
+/**
+ * Returns a string composed of spaces.
+ * @param {number} len The length of the string.
+ * @return {string} The pad string.
+ */
 AsciiView.prototype.pad_ = function(len) {
   return new Array(len).join(' ');
 };
