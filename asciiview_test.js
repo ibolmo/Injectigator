@@ -8,12 +8,20 @@
 
 (function() {
 
-function node(name, elapsed, next) {
-  return {
+function node(name, next, opt_opts) {
+  opt_opts = opt_opts || {};
+  var enode = {
     curry: { $name: name },
-    elapsed: elapsed,
+    elapsed: opt_opts.elapsed || 0,
     next: next
   };
+  if (opt_opts.delayed) {
+    enode.curry.$delayed = true;
+  }
+  if (opt_opts.periodical) {
+    enode.curry.$periodical = true;
+  }
+  return enode;
 }
 
 TestCase('AsciiView', {
@@ -29,7 +37,7 @@ TestCase('AsciiView', {
   },
 
   testParseNodeSiblings: function() {
-    var tree = {first: node(undefined, 0, node('1', 10, node('2', 0)))};
+    var tree = {first: node(undefined, node('1', node('2'), {elapsed: 10}))};
     var expected = [
       this.symbols.START,
       this.symbols.NODE + ' anon, 0 ms',
@@ -40,10 +48,40 @@ TestCase('AsciiView', {
     assertEquals(expected, this.view.toString());
   },
 
+  testParseNodeDelayedSibling: function() {
+    var tree = {
+      first: node(undefined,
+               node('delayed',
+                 node('2'), {delayed: true, elapsed: 10}))};
+    var expected = [
+      this.symbols.START,
+      this.symbols.NODE + ' anon, 0 ms',
+      this.symbols.DELAYED + ' delayed, 10 ms',
+      this.symbols.NODE + ' 2, 0 ms'
+    ].join('\n');
+    this.view.parseNode(tree);
+    assertEquals(expected, this.view.toString());
+  },
+
+  testParseNodePeriodicalSibling: function() {
+    var tree = {
+      first: node(undefined,
+               node('periodical',
+                 node('2'), {periodical: true, elapsed: 10}))};
+    var expected = [
+      this.symbols.START,
+      this.symbols.NODE + ' anon, 0 ms',
+      this.symbols.PERIODICAL + ' periodical, 10 ms',
+      this.symbols.NODE + ' 2, 0 ms'
+    ].join('\n');
+    this.view.parseNode(tree);
+    assertEquals(expected, this.view.toString());
+  },
+
   testParseNodeChildren: function() {
     var root = {};
-    root.first = node('parent', 0, node('sibling', 0));
-    root.first.first = node('1st', 0, node('2nd', 0));
+    root.first = node('parent', node('sibling'));
+    root.first.first = node('1st', node('2nd'));
     var expected = [
       this.symbols.START,
       this.symbols.NODE + ' parent, 0 ms ' + this.symbols.START,
@@ -57,10 +95,10 @@ TestCase('AsciiView', {
 
   testParseNodeNestedChildren: function() {
     var root = {};
-    root.first = node('parent', 0, node('sibling', 0));
-    var second = node('2nd', 0, node('3rd', 0));
-    root.first.first = node('1st', 0, second);
-    second.first = node('a', 0, node('b', 0));
+    root.first = node('parent', node('sibling'));
+    var second = node('2nd', node('3rd'));
+    root.first.first = node('1st', second);
+    second.first = node('a', node('b'));
     var expected = [
       this.symbols.START,
       this.symbols.NODE + ' parent, 0 ms ' + this.symbols.START,

@@ -66,8 +66,14 @@ AsciiView.prototype.parseNode = function(node) {
   var prefix = this.pad_(this.buffer_[this.l_].length);
   while (node) {
     if (node.curry) {
+      var symbol = AsciiView.SymbolType.NODE;
+      if (node.curry.$delayed) {
+        symbol = AsciiView.SymbolType.DELAYED;
+      } else if (node.curry.$periodical) {
+        symbol = AsciiView.SymbolType.PERIODICAL;
+      }
       this.buffer_[++this.l_] = prefix + [
-        AsciiView.SymbolType.NODE,
+        symbol,
         (node.curry.$name || 'anon') + ',',
         node.elapsed, 'ms'
       ].join(' ');
@@ -84,7 +90,9 @@ AsciiView.prototype.parseNode = function(node) {
 
 /** @return The ASCII representation of the graph. */
 AsciiView.prototype.toString = function() {
-  return this.buffer_.join('\n');
+  var str = this.buffer_.join('\n');
+  console.log(str);
+  return str;
 };
 
 
