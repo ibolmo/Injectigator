@@ -28,17 +28,21 @@ def _print_header():
    */
   ''' % {'version': __version__}
 
-def process(js_file):
+def process(js):
   """Process the JS file and inject the Injectigator API in the JS code.
 
   Arguments:
-  js_file -- the js file handler
+  js -- the js file content
 
   Returns:
   processed_js -- the processed JavaScript in a string.
 
   """
   processed_js = _print_header()
+
+  
+
+  return processed_js
 
 
 def _validate_input(parser, args):
@@ -59,7 +63,7 @@ def _validate_input(parser, args):
   return input_file, output_file
 
 
-def main():
+def _main():
   """The entrypoint when using this file as an entry point."""
   logging.basicConfig(format='injectigator.py: %(message)s', level=logging.INFO)
 
@@ -73,8 +77,8 @@ def main():
   input_file = open(input_file)
   processed_js = None
   try:
-    processed_js = process(input_file)
-  else:
+    processed_js = process(input_file.read())
+  except:
     input_file.close()
     parser.error('An unexpected error occurred while reading the input file.')
 
@@ -84,4 +88,4 @@ def main():
     output_file.close()
 
 if __name__ == '__main__':
-  main()
+  _main()
