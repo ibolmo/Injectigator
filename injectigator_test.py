@@ -12,6 +12,55 @@ def assert_equals(original, expected):
   """Helper for creating a legible string comparsion traceback"""
   assert original == expected, '\n'.join(difflib.ndiff(expected.splitlines(),
                                                        original.splitlines()))
+def test_parse():
+  # None or invalid line
+  for test in [
+    '',
+    '"unction";',
+    'var a = "function";',
+    'delete Function.prototype.bind;']:
+
+    fnType, data = injectigator.parse(test)
+    assert fnType == injectigator.FunctionType.NONE, \
+           'type: %s, for: %s' % (injectigator.FunctionType.get_(fnType), test)
+    assert 'name' not in data, 'name: %s for: %s' % (data['name'], test)
+
+  # Assigned
+  for test in [
+    'var a = function(){',
+    'var a = function(){};',
+    'var a = function(){ return $rand(); };',
+    'var a = function(){ return function(){ var b = 1; } };']:
+
+    fnType, data = injectigator.parse(test)
+    assert fnType == injectigator.FunctionType.ASSIGNED, \
+           'type: %s, for: %s' % (injectigator.FunctionType.get_(fnType), test)
+    assert 'name' in data, 'no name found for: %s' % test
+    assert data['name'] == 'a', 'name: %s for: %s' % (data['name'], test)
+
+  # Anonymous
+  for test in [
+    '(function(){})();',
+    'function(){',
+    'function(){}']:
+
+    fnType, data = injectigator.parse(test)
+    assert fnType == injectigator.FunctionType.ANONYMOUS, \
+           'type: %s, for: %s' % (injectigator.FunctionType.get_(fnType), test)
+    assert 'name' not in data, 'name: %s, for: %s' % (data['name'], test)
+
+  # Named
+  for test in [
+    'function a(){',
+    '(function a(_, __, ___){})();',
+    '(function a(_){ return function(){}; })();']:
+
+    fnType, data = injectigator.parse(test)
+    assert fnType == injectigator.FunctionType.ASSIGNED, \
+           'type: %s, for: %s' % (injectigator.FunctionType.get_(fnType), test)
+    assert 'name' in data, 'no name found for: %s' % test
+    assert data['name'] == 'a', 'name: %s for: %s' % (data['name'], test)
+
 
 def test_process():
   header = injectigator.process('')
@@ -20,20 +69,19 @@ def test_process():
   # Assignment
   assert_equals(injectigator.process('''
   var a = function(_, __, ___) {
-  var b = {};
+    var b = {};
     for (var c in b) {
       // nothing
     }
   };
   '''), header + '''
   var a = Injectigator.fn('a', 1, function(_, __, ___) {
-  var b = {};
-  for (var c in b) {
-    // nothing
-  }
+    var b = {};
+    for (var c in b) {
+      // nothing
+    }
   });
   ''')
-  return
 
   # Inlined functions
   assert_equals(injectigator.process('''

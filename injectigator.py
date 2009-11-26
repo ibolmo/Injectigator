@@ -18,15 +18,61 @@ __version__ = '0.0.1'
 import logging
 import optparse
 import os
+import re
+
+class Enumerate(object):
+  """Helper for creating enums in Python"""
+  def __init__(self, names):
+    self.enums = {}
+    for number, name in enumerate(names.split()):
+      value = 2 * number
+      setattr(self, name, value)
+      self.enums[value] = name
+
+  def get_(self, value):
+    """Return the string representation for the enum (int) value."""
+    return self.enums.get(value)
+
+FunctionType = Enumerate('NONE ANONYMOUS NAMED ASSIGNED')
 
 def _print_header():
-  """Return the header text for a processed JS"""
+  """Return the header text for a processed JS."""
   return '''
   /**
    * This file has been modified by Injectigator (v. %(version)s).
    * For more information: http://github.com/ibolmo/Injectigator
    */
   ''' % {'version': __version__}
+
+# RegExp for various function declarations.
+function_re = re.compile(r'((?P<var>\w*)(?: *=|:) *)?function *(?P<fn>\w*)\(')
+
+def parse(line):
+  """Parse a line for function declarations.
+
+  Args:
+    line -- A JS code line.
+
+  Returns:
+    fnType -- The type of function found or FunctionType.NONE.
+    data - A dictionary placeholder with additional information.
+
+  """
+  fnType = FunctionType.NONE
+  data = {}
+  if ('function' in line):
+    m = function_re.search(line)
+    if m is not None:
+      fnType = FunctionType.ANONYMOUS
+      var = m.group('var')
+      fn = m.group('fn')
+      if (fn):
+        fnType |= FunctionType.NAMED
+        data['name'] = fn
+      if (var):
+        fnType |= FunctionType.ASSIGNED
+        data['name'] = var
+  return fnType, data
 
 def process(js):
   """Process the JS file and inject the Injectigator API in the JS code.
@@ -40,7 +86,33 @@ def process(js):
   """
   processed_js = _print_header()
 
-  
+  ln = 0
+  for line in js:
+    ln += 1
+
+    fnType, data = parse(line)
+
+  #  if fnType is not FunctionType.NONE:
+  #    inFunction = True
+  #    # TODO(ibolmo): Allow for multiple {{ in a line.
+  #    #   e.g.: function(){ var a = {}; return 0; };
+  #    closure_cnt += 1
+  #    if fnType is FunctionType.ANONYMOUS:
+  #      # (function(...) { ... })();
+  #    else if fnType is FunctionType.NAMED:
+  #      # function fn(...) { ... }
+  #    else if fnType is FunctionType.ASSIGNED:
+  #      # var fn = function(...) { ... }
+  #    else if fnType is (FunctionType.NAMED | FunctionType.ASSIGNED):
+  #      # var fn = function fn2(...) { ... }
+  #  else if inFunction:
+  #    if '}' in line:
+  #      # TODO(ibolmo): Allow for multiple }} in a line. See above.
+  #      closure_cnt -= 1
+  #    if closure_cnt <= 0:
+  #      # We've hit the end of the function definition.
+  #      closure_cnt = 0
+  #      inFunction = False
 
   return processed_js
 
