@@ -20,6 +20,7 @@ import optparse
 import os
 import re
 
+
 class Enumerate(object):
   """Helper for creating enums in Python"""
   def __init__(self, names):
@@ -35,6 +36,7 @@ class Enumerate(object):
 
 FunctionType = Enumerate('NONE ANONYMOUS NAMED ASSIGNED')
 
+
 def _print_header():
   """Return the header text for a processed JS."""
   return '''
@@ -46,6 +48,7 @@ def _print_header():
 
 # RegExp for various function declarations.
 function_re = re.compile(r'((?P<var>\w*)(?: *=|:) *)?function *(?P<fn>\w*)\(')
+
 
 def parse(line):
   """Parse a line for function declarations.
@@ -78,43 +81,26 @@ def process(js):
   """Process the JS file and inject the Injectigator API in the JS code.
 
   Arguments:
-  js -- the js file content
+  js -- the js file content. Must be iterable (by lines).
 
   Returns:
   processed_js -- the processed JavaScript in a string.
 
   """
-  processed_js = _print_header()
+  buffer_ = [_print_header()]
 
   ln = 0
   for line in js:
     ln += 1
 
-    fnType, data = parse(line)
+    last = 0
+    for m in re.finditer(r'function', line):
+      substr = line[last : m.end() + 1]
+      fnType, data = parse(substr)
+      last = m.end()
 
-  #  if fnType is not FunctionType.NONE:
-  #    inFunction = True
-  #    # TODO(ibolmo): Allow for multiple {{ in a line.
-  #    #   e.g.: function(){ var a = {}; return 0; };
-  #    closure_cnt += 1
-  #    if fnType is FunctionType.ANONYMOUS:
-  #      # (function(...) { ... })();
-  #    else if fnType is FunctionType.NAMED:
-  #      # function fn(...) { ... }
-  #    else if fnType is FunctionType.ASSIGNED:
-  #      # var fn = function(...) { ... }
-  #    else if fnType is (FunctionType.NAMED | FunctionType.ASSIGNED):
-  #      # var fn = function fn2(...) { ... }
-  #  else if inFunction:
-  #    if '}' in line:
-  #      # TODO(ibolmo): Allow for multiple }} in a line. See above.
-  #      closure_cnt -= 1
-  #    if closure_cnt <= 0:
-  #      # We've hit the end of the function definition.
-  #      closure_cnt = 0
-  #      inFunction = False
-
-  return processed_js
+    buffer_.append(line)
+  return '\n'.join(buffer_)
 
 
 def _validate_input(parser, args):
@@ -149,7 +135,7 @@ def _main():
   input_file = open(input_file)
   processed_js = None
   try:
-    processed_js = process(input_file.read())
+    processed_js = process(input_file)
   except:
     input_file.close()
     parser.error('An unexpected error occurred while reading the input file.')

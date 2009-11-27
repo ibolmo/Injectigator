@@ -10,8 +10,9 @@ import pprint
 
 def assert_equals(original, expected):
   """Helper for creating a legible string comparsion traceback"""
-  assert original == expected, '\n'.join(difflib.ndiff(expected.splitlines(),
-                                                       original.splitlines()))
+  msg = '\n'.join(difflib.unified_diff(expected.splitlines(),
+                                       original.splitlines()))
+  assert original == expected, msg
 def test_parse():
   # None or invalid line
   for test in [
@@ -27,6 +28,7 @@ def test_parse():
 
   # Assigned
   for test in [
+    'var a = function(',
     'var a = function(){',
     'var a = function(){};',
     'var a = function(){ return $rand(); };',
@@ -63,7 +65,7 @@ def test_parse():
 
 
 def test_process():
-  header = injectigator.process('')
+  header = injectigator.process('') + '\n'
   assert 'github.com/ibolmo' in header
 
   # Assignment
@@ -74,7 +76,7 @@ def test_process():
       // nothing
     }
   };
-  '''), header + '''
+  '''.splitlines()), header + '''
   var a = Injectigator.fn('a', 1, function(_, __, ___) {
     var b = {};
     for (var c in b) {
@@ -82,6 +84,7 @@ def test_process():
     }
   });
   ''')
+  return
 
   # Inlined functions
   assert_equals(injectigator.process('''
