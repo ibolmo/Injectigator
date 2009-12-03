@@ -13,6 +13,7 @@ Injectigator doesn't try to replace these efforts, however. Think of
 Injectigator as a short term solution with purposeful tools to help you
 understand the performance of your JavaScript code.
 
+
 How Injectigator Works
 ======================
 
